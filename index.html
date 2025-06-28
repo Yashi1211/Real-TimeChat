@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="chat-container">
+    <ul id="messages"></ul>
+    <div id="typing-status" style="color: rgb(128, 128, 128); font-style: italic;"></div>
+
+    <form id="form">
+      <input id="input" autocomplete="off" placeholder="Type your message..." /><button>Send</button>
+    </form>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+  const form = document.getElementById('form');
+  const input = document.getElementById('input');
+  const messages = document.getElementById('messages');
+  const typingStatus = document.getElementById('typing-status');
+
+  let username = prompt("Enter your name:");
+  if (!username) username = "Anonymous";
+
+  // ✅ Jab user likhna start kare
+  input.addEventListener('input', () => {
+    socket.emit('typing', username);
+  });
+
+  // ✅ Jab koi dusra user type kare
+  socket.on('typing', (user) => {
+    typingStatus.textContent = `${user} is typing...`;
+
+    // 2 seconds baad message hata do
+    clearTimeout(window.typingTimer);
+    window.typingTimer = setTimeout(() => {
+      typingStatus.textContent = '';
+    }, 2000);
+  });
+
+  // ✅ Jab message send ho
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (input.value) {
+      const msg = {
+        user: username,
+        text: input.value,
+        time: new Date().toLocaleTimeString()
+      };
+      socket.emit('chat message', msg);
+      input.value = '';
+      typingStatus.textContent = '';
+    }
+  });
+
+  // ✅ Jab message receive ho
+  socket.on('chat message', (msg) => {
+    const item = document.createElement('li');
+    item.textContent = `[${msg.time}] ${msg.user}: ${msg.text}`;
+    messages.appendChild(item);
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+  </script>
+</body>
+</html>
